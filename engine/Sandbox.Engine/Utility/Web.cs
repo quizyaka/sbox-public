@@ -3,12 +3,23 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
+using System.Security.Authentication;
 
 namespace Sandbox.Utility;
 
 internal static class Web
 {
-	static HttpClient client = new HttpClient()
+	static HttpClient client = new HttpClient( new SocketsHttpHandler()
+	{
+		PooledConnectionLifetime = TimeSpan.FromMinutes( 1 ),
+		ConnectTimeout = TimeSpan.FromSeconds( 15 ),
+		SslOptions = new()
+		{
+			EnabledSslProtocols = SslProtocols.Tls12,
+			CertificateRevocationCheckMode = System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck,
+			RemoteCertificateValidationCallback = ( message, cert, chain, errors ) => true
+		}
+	} )
 	{
 		Timeout = TimeSpan.FromMinutes( 120 )
 	};

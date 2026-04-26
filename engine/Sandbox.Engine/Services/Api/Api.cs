@@ -2,6 +2,7 @@
 using Sandbox.UI;
 using System.Net.Http;
 using System.Threading;
+using System.Security.Authentication;
 
 namespace Sandbox;
 
@@ -112,23 +113,23 @@ class BackendHttpHandler : DelegatingHandler
 
 	public BackendHttpHandler()
 	{
-		// default handler
-		InnerHandler = new HttpClientHandler()
+		InnerHandler = new SocketsHttpHandler()
 		{
-			// Skip revocation checks
-			CheckCertificateRevocationList = false,
-
-			// Log any SSL exceptions, but let them continue. People in very forign countries
-			// regularly have problems due to having to use proxies etc
-			ServerCertificateCustomValidationCallback = ( message, cert, chain, errors ) =>
+			PooledConnectionLifetime = TimeSpan.FromMinutes( 1 ),
+			ConnectTimeout = TimeSpan.FromSeconds( 15 ),
+			SslOptions = new()
 			{
-				if ( errors != System.Net.Security.SslPolicyErrors.None )
+				EnabledSslProtocols = SslProtocols.Tls12,
+				CertificateRevocationCheckMode = System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck,
+				RemoteCertificateValidationCallback = ( message, cert, chain, errors ) =>
 				{
-					Log.Warning( $"SSL Error: {errors}" );
-				}
+					if ( errors != System.Net.Security.SslPolicyErrors.None )
+					{
+						Log.Warning( $"SSL Error: {errors}" );
+					}
 
-				// allow even with the ssl error
-				return true;
+					return true;
+				}
 			}
 		};
 	}
