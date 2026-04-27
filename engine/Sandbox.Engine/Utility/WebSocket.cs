@@ -3,6 +3,8 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
+using System.Net.Http;
+using System.Security.Authentication;
 
 namespace Sandbox;
 
@@ -42,8 +44,11 @@ public sealed class WebSocket : IDisposable
 	[SkipHotload]
 	private CancellationTokenSource _cts;
 	[SkipHotload]
+	private HttpMessageInvoker _connectInvoker;
+	[SkipHotload]
 	private ClientWebSocket _socket;
 	[SkipHotload]
+	
 	private readonly Channel<Message> _outgoing;
 	private readonly int _maxMessageSize;
 	private bool _dispatchedDisconnect;
@@ -112,6 +117,17 @@ public sealed class WebSocket : IDisposable
 
 		_cts = new CancellationTokenSource();
 		_socket = new ClientWebSocket();
+		_connectInvoker = new HttpMessageInvoker( new SocketsHttpHandler()
+		{
+			PooledConnectionLifetime = TimeSpan.FromMinutes( 1 ),
+			ConnectTimeout = TimeSpan.FromSeconds( 15 ),
+			SslOptions = new()
+			{
+				EnabledSslProtocols = SslProtocols.Tls12,
+				CertificateRevocationCheckMode = System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck,
+				RemoteCertificateValidationCallback = ( message, cert, chain, errors ) => true
+			}
+		} );
 
 		_outgoing = Channel.CreateBounded<Message>( new BoundedChannelOptions( 10 )
 		{
@@ -147,6 +163,9 @@ public sealed class WebSocket : IDisposable
 
 			_socket?.Dispose();
 			_socket = null;
+
+			_connectInvoker?.Dispose();
+			_connectInvoker = null;
 
 			_outgoing.Writer.TryComplete();
 		}
@@ -220,7 +239,8 @@ public sealed class WebSocket : IDisposable
 
 		using var linkedCt = CancellationTokenSource.CreateLinkedTokenSource( _cts.Token, ct );
 
-		await _socket.ConnectAsync( uri, linkedCt.Token );
+		// await _socket.ConnectAsync( uri, linkedCt.Token );
+		await _socket.ConnectAsync( uri, _connectInvoker, linkedCt.Token );
 
 		SendLoop();
 		ReceiveLoop();
