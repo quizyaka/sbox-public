@@ -200,7 +200,8 @@ internal static partial class InputRouter
 			_ => GamepadCode.None,
 		};
 
-		OnGamepadCode( deviceId, code, value >= triggerDeadzone );
+		// Normalize raw SDL axis value to 0-1 range before comparing against the normalized deadzone.
+		OnGamepadCode( deviceId, code, ((float)value).Remap( 0, Controller.AXIS_RANGE.y, 0, 1 ) >= triggerDeadzone );
 	}
 
 	internal static void OnGameControllerConnected( int joystickId, int deviceId )
