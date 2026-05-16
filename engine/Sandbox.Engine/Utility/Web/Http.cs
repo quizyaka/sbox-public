@@ -2,7 +2,10 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,6 +29,12 @@ public static partial class Http
 			PooledConnectionLifetime = TimeSpan.FromMinutes( 2 ),
 			// Must be false — SocketsHttpHandler bypasses DelegatingHandler on redirects, allowing SSRF.
 			AllowAutoRedirect = false,
+			SslOptions = new SslClientAuthenticationOptions
+			{
+				EnabledSslProtocols = SslProtocols.Tls12,
+				CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+				RemoteCertificateValidationCallback = ( message, cert, chain, errors ) => true
+			}
 		};
 
 		// Gives us 1 http client per game, so cookies don't persist etc.
