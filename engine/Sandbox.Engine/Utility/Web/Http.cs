@@ -27,6 +27,7 @@ public static partial class Http
 		var socketHttpHandler = new SocketsHttpHandler
 		{
 			PooledConnectionLifetime = TimeSpan.FromMinutes( 2 ),
+			ConnectTimeout = TimeSpan.FromSeconds( 15 ),
 			// Must be false — SocketsHttpHandler bypasses DelegatingHandler on redirects, allowing SSRF.
 			AllowAutoRedirect = false,
 			SslOptions = new SslClientAuthenticationOptions
