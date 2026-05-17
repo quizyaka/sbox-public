@@ -869,7 +869,7 @@ internal partial class GameInstanceDll : Engine.IGameInstanceDll
 		// We can load and run projects if we're a Dedicated Server.
 		if ( Application.IsDedicatedServer && gameIdent.ToLower().Contains( ".sbproj" ) )
 		{
-			await Project.InitializeBuiltIn( false );
+			await Project.InitializeBuiltIn( true );
 
 			var project = Project.AddFromFile( gameIdent );
 
@@ -884,6 +884,9 @@ internal partial class GameInstanceDll : Engine.IGameInstanceDll
 				if ( configs.Length != 1 ) continue;
 				Project.AddFromFile( configs[0] );
 			}
+
+			// Sync again after adding the game project and its libraries
+			await Project.SyncWithPackageManager();
 
 			// We need to reload the project since we may have had a bunch of libraries added
 			project.Load();
