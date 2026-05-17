@@ -176,9 +176,32 @@ public sealed partial class Project
 	public string GetProjectPath() => System.IO.Directory.EnumerateFiles( GetRootPath(), "*.sbproj" ).FirstOrDefault();
 
 	/// <summary>
+	/// Resolve a subdirectory name case-insensitively on Linux.
+	/// Returns the actual on-disk path if found, otherwise falls back to the requested name.
+	/// </summary>
+	private string ResolveSubDirectory( string folderName )
+	{
+		var preferred = System.IO.Path.Combine( RootDirectory.FullName, folderName );
+		if ( System.IO.Directory.Exists( preferred ) )
+			return preferred;
+
+		// Case-insensitive fallback for Linux
+		try
+		{
+			var match = System.IO.Directory.EnumerateDirectories( RootDirectory.FullName )
+				.FirstOrDefault( d => string.Equals( System.IO.Path.GetFileName( d ), folderName, StringComparison.OrdinalIgnoreCase ) );
+			if ( match is not null )
+				return match;
+		}
+		catch { }
+
+		return preferred;
+	}
+
+	/// <summary>
 	/// Absolute path to the Code folder of the project.
 	/// </summary>
-	public string GetCodePath() => System.IO.Path.Combine( RootDirectory.FullName, "Code" );
+	public string GetCodePath() => ResolveSubDirectory( "Code" );
 
 	/// <summary>
 	/// Returns true if the Code path exists
@@ -188,7 +211,7 @@ public sealed partial class Project
 	/// <summary>
 	/// Absolute path to the Editor folder of the project.
 	/// </summary>
-	public string GetEditorPath() => System.IO.Path.Combine( RootDirectory.FullName, "Editor" );
+	public string GetEditorPath() => ResolveSubDirectory( "Editor" );
 
 	/// <summary>
 	/// Returns true if the Editor path exists
@@ -198,13 +221,13 @@ public sealed partial class Project
 	/// <summary>
 	/// Absolute path to the Assets folder of the project, or <see langword="null"/> if not set.
 	/// </summary>
-	public string GetAssetsPath() => System.IO.Path.Combine( RootDirectory.FullName, "Assets" );
+	public string GetAssetsPath() => ResolveSubDirectory( "Assets" );
 
 	/// <summary>
 	/// Absolute path to the Localization folder of the project, or <see langword="null"/> if not set.
 	/// </summary>
 	/// <returns></returns>
-	public string GetLocalizationPath() => System.IO.Path.Combine( RootDirectory.FullName, "Localization" );
+	public string GetLocalizationPath() => ResolveSubDirectory( "Localization" );
 
 	/// <summary>
 	/// Returns true if the Assets path exists
