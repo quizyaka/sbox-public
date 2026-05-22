@@ -52,6 +52,7 @@ internal partial class GameInstanceDll
 		var instance = new SceneNetworkSystem( TypeLibrary, system );
 
 		NetworkedLargeFiles.NetworkInitialize( instance );
+		Platform.Chat.NetworkInitialize( instance );
 
 		if ( Networking.IsHost )
 		{
@@ -91,6 +92,7 @@ internal partial class GameInstanceDll
 		var instance = new SceneNetworkSystem( TypeLibrary, system );
 
 		NetworkedLargeFiles.NetworkInitialize( instance );
+		Platform.Chat.NetworkInitialize( instance );
 
 		if ( Networking.IsHost )
 		{
