@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(git revert *)",
+      "Bash(git rm *)",
+      "Bash(git reset *)",
+      "Bash(git push *)",
+      "Bash(git ls-tree *)",
+      "Bash(git log *)"
     ]
   }
 }
