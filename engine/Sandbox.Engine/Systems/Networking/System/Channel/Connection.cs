@@ -465,10 +465,6 @@ public abstract partial class Connection
 				return "Local Player";
 
 			var displayName = FriendInfo.DisplayName;
-
-			if ( string.IsNullOrWhiteSpace( displayName ) )
-				displayName = Info?.DisplayName;
-
 			return string.IsNullOrWhiteSpace( displayName ) ? "Unknown Player" : displayName;
 		}
 	}
