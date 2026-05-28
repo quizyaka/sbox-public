@@ -381,12 +381,13 @@ public partial class Mixer
 			mixBuffer.CopyFromUpmix( samples );
 			var sourceParams = allParams[vs.SourceOffset + i];
 			ApplyDirectMix( source, listener, mixBuffer, volume, in sourceParams );
-			ConvertToBinaural( allBinaurals[vs.SourceOffset + i], mixTransform, in vs, mixBuffer );
+			ConvertToBinaural( allBinaurals[vs.SourceOffset + i], mixTransform, in vs, samples.ChannelCount, mixBuffer );
 			targetBuffer.MixFrom( mixBuffer, 1.0f );
 		}
 	}
 
 	MultiChannelBuffer _input;
+	MultiChannelBuffer _binauralInput;
 
 	void EnsureInputBuffer( int channelCount )
 	{
@@ -394,6 +395,15 @@ public partial class Mixer
 		{
 			_input?.Dispose();
 			_input = new MultiChannelBuffer( channelCount );
+		}
+	}
+
+	void EnsureBinauralInputBuffer( int channelCount )
+	{
+		if ( _binauralInput?.ChannelCount != channelCount )
+		{
+			_binauralInput?.Dispose();
+			_binauralInput = new MultiChannelBuffer( channelCount );
 		}
 	}
 
@@ -412,20 +422,26 @@ public partial class Mixer
 	/// <summary>
 	/// Spatialize the voice based on its snapshotted position and spatialization parameters.
 	/// </summary>
-	void ConvertToBinaural( BinauralEffect binaural, Transform mixTransform, in VoiceState vs, MultiChannelBuffer inputoutput )
+	void ConvertToBinaural( BinauralEffect binaural, Transform mixTransform, in VoiceState vs, int sourceChannelCount, MultiChannelBuffer inputoutput )
 	{
 		if ( binaural is null )
 			return;
 
-		EnsureInputBuffer( inputoutput.ChannelCount );
-		_input.CopyFrom( inputoutput );
-
 		if ( vs.ListenLocal )
 		{
+			var localSpatial = 0.1f * Spacializing;
+			// ListenLocal voices on mixers with Spacializing==0 (music/UI default) would just
+			// run a near-identity HRIR convolution; inputoutput already holds the desired output.
+			if ( localSpatial <= 0f ) return;
+
 			var pos = vs.Position;
 			while ( pos.Length < 0.5f ) pos += new Vector3( 1, 0, 0 );
 
-			binaural.Apply( pos, 0.1f * Spacializing, useNearestInterpolation: true, _input, inputoutput );
+			var binauralChannels = Math.Min( Math.Max( sourceChannelCount, 1 ), 2 );
+			EnsureBinauralInputBuffer( binauralChannels );
+			_binauralInput.CopyFrom( inputoutput );
+
+			binaural.Apply( pos, localSpatial, useNearestInterpolation: true, _binauralInput, inputoutput );
 			return;
 		}
 
@@ -441,8 +457,12 @@ public partial class Mixer
 				: soundDirectionLocal.Normal * soundDistance;
 		}
 
+		var binauralChannels3D = Math.Min( Math.Max( sourceChannelCount, 1 ), 2 );
+		EnsureBinauralInputBuffer( binauralChannels3D );
+		_binauralInput.CopyFrom( inputoutput );
+
 		bool useNearest = vs.IsVoice || vs.Loopback || spacial < 0.5f;
-		binaural.Apply( soundDirectionLocal, spacial, useNearest, _input, inputoutput );
+		binaural.Apply( soundDirectionLocal, spacial, useNearest, _binauralInput, inputoutput );
 	}
 
 	/// <summary>
