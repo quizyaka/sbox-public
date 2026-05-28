@@ -71,6 +71,9 @@ engine/TestResults/
 .vs/
 .intermediate/
 
+# Claude Code local settings
+/.claude/
+
 # addon debris
 /game/**/.sbox/*
 /game/**/*.sln
